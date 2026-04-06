@@ -1,0 +1,8 @@
+rootProject.name = 'ecommerce-semantic-search'
+
+include 'common'
+include 'modules:user'
+include 'modules:product'
+include 'modules:order'
+include 'modules:payment'
+include 'application'

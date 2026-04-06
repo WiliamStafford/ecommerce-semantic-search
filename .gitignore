@@ -1,0 +1,17 @@
+# Java & Gradle
+.gradle/
+build/
+bin/
+*.class
+
+# IDE (IntelliJ, VS Code)
+.idea/
+*.iml
+.project
+.settings/
+.classpath
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
