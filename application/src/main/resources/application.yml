@@ -1,5 +1,6 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+  address: 0.0.0.0
   servlet:
     context-path: /
 
@@ -8,14 +9,13 @@ spring:
     name: ecommerce-semantic-search
 
   datasource:
-    url: jdbc:mysql://localhost:3306/ecommerce_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: root
-    password: ""
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-
       ddl-auto: update
     show-sql: true
     properties:
@@ -30,11 +30,12 @@ spring:
     locations: classpath:db/migration
     clean-on-validation-error: true
     clean-disabled: false
+
   mail:
     host: smtp.gmail.com
     port: 587
-    username: levuhung678@gmail.com
-    password: xcmb ajlr wcaz zgdk
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -44,11 +45,11 @@ spring:
 
 app:
   jwt:
-    secret: "491aee2a-0b08-444e-af9a-cbc250be22aa"
-    expiration: 86400000
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}
 
 logging:
   level:
     root: INFO
-    com.ecommerce: DEBUG
+    com.ecommerce: ${LOGGING_LEVEL:DEBUG}
     org.springframework.security: INFO
