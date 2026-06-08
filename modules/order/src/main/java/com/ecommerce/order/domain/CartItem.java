@@ -23,4 +23,5 @@ public class CartItem {
     private Long sellerProductId;
     private Integer quantity;
 
+
 }

@@ -23,4 +23,8 @@ public record OrderRequest(
 
         Double totalPrice
 ) {
+        public String getShippingAddress() {
+                return shippingAddress;
+
+        }
 }

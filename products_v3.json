@@ -1,0 +1,28 @@
+{
+  "settings": {
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "properties": {
+      "id": { "type": "long" },
+      "productName": {
+        "type": "text",
+        "analyzer": "standard"
+      },
+      "price": { "type": "double" },
+      "categoryId": { "type": "long" },
+      "categoryName": { "type": "keyword" },
+      "avatar": { "type": "keyword" },
+      "description": {
+        "type": "text",
+        "analyzer": "standard"
+      },
+      "vector": {
+        "type": "dense_vector",
+        "dims": 384,
+        "index": true,
+        "similarity": "cosine"
+      }
+    }
+  }
+}

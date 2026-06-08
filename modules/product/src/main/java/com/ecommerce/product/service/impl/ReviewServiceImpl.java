@@ -1,8 +1,7 @@
 package com.ecommerce.product.service.impl;
 
 import com.ecommerce.product.domain.Review;
-import com.ecommerce.product.repository.ProductRepository;
-import com.ecommerce.product.repository.ReviewRepository;
+import com.ecommerce.product.repository.jpa.ReviewRepository;
 import com.ecommerce.product.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,18 +15,21 @@ import java.util.List;
 public class ReviewServiceImpl implements ReviewService {
 
     private final ReviewRepository reviewRepository;
-    private final ProductRepository productRepository;
-
     @Transactional
     @Override
     public Review createReview(Long userId, Long orderItemId, int rating, String comment, Long productId) {
 
-        int deliveredCount = reviewRepository.countDeliveredOrderItems(orderItemId);
-        if (deliveredCount == 0) {
-            throw new RuntimeException("Bạn chỉ có thể đánh giá sản phẩm khi đơn hàng đã được giao thành công!");
+        if (reviewRepository.existsByOrderItemId(orderItemId)) {
+            throw new RuntimeException("Bạn đã gửi bài đánh giá cho sản phẩm này trước đó rồi!");
         }
 
+        if (reviewRepository.countReturnRequestByOrderItemId(orderItemId) > 0) {
+            throw new RuntimeException("Mặt hàng này đang nằm trong diện khiếu nại đổi trả, không thể viết đánh giá!");
+        }
 
+        if (reviewRepository.countDeliveredOrderItems(orderItemId) == 0) {
+            throw new RuntimeException("Bạn không thể đánh giá sản phẩm thuộc hóa đơn chưa hoàn tất hoặc chưa giao thành công!");
+        }
 
         Review review = Review.builder()
                 .userId(userId)
@@ -41,9 +43,6 @@ public class ReviewServiceImpl implements ReviewService {
 
         return reviewRepository.save(review);
     }
-
-
-
     @Override
     public List<Review> getReviewsByProduct(Long productId) {
         return reviewRepository.findAllByProductId(productId);
@@ -56,5 +55,10 @@ public class ReviewServiceImpl implements ReviewService {
                 .mapToInt(Review::getRating)
                 .average()
                 .orElse(0.0);
+    }
+
+    @Override
+    public List<Review> getUserReviews(Long userId) {
+        return reviewRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
     }
 }

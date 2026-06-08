@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 
 import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "wishlist")
 @Data
@@ -24,10 +23,14 @@ public class Wishlist {
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "product_id")
-    private Long productId;
+    @Column(name = "seller_product_id")
+    private Long sellerProductId;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt ;
+    private LocalDateTime createdAt;
 
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

@@ -1,12 +1,23 @@
 plugins {
     id 'java-library'
+    id 'org.springframework.boot' version '3.2.4' apply false
+    id 'io.spring.dependency-management' version '1.1.4'
 }
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation 'co.elastic.clients:elasticsearch-java:8.10.4'
+    implementation 'com.fasterxml.jackson.core:jackson-databind' // Yêu cầu của ES Client
+
+    implementation 'org.apache.httpcomponents:httpasyncclient:4.1.5'
+    implementation 'org.apache.httpcomponents:httpcore-nio:4.4.16'
+
     implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+    api 'com.cloudinary:cloudinary-http44:1.36.0'
 }

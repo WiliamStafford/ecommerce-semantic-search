@@ -38,6 +38,21 @@ public class ReturnRequest {
     @Column(name = "note")
     private String note;
 
+    @Column(name = "refund_method")
+    private String refundMethod;
+
+    @Column(name = "bank_name")
+    private String bankName;
+
+    @Column(name = "bank_account_number")
+    private String bankAccountNumber;
+
+    @Column(name = "bank_account_name")
+    private String bankAccountName;
+
+    @Column(name = "paypal_email")
+    private String paypalEmail;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

@@ -20,7 +20,7 @@ public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    private Long productSellerId;
     private Long conversationId;
     private Long senderId;
 

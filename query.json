@@ -1,0 +1,8 @@
+{
+  "knn": {
+    "field": "vector",
+    "query_vector": [0.01, 0.02, 0.03, ...],
+    "k": 5,
+    "num_candidates": 100
+  }
+}

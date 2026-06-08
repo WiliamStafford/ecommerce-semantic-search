@@ -11,6 +11,7 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
     List<Order> findByUserId(Long userId);
 
     @Modifying
@@ -18,5 +19,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     void updateStatus(@Param("id") Long id, @Param("status") OrderStatus status);
 
     Order findAllByOrderStatus(OrderStatus status);
-}
 
+    List<Order> findAllByUserId(Long userId);
+
+    List<Order> findBySellerId(Long sellerId);
+}

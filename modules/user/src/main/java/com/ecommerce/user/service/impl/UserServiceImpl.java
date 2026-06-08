@@ -14,7 +14,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl implements UserService, com.ecommerce.product.service.UserLookupService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -97,6 +97,22 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email: " + name));
 
         return user.getId();
+    }
+
+    @Override
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new RuntimeException(" KHông tìm thấy người dùng với id:" + userId));
+    }
+
+
+    @Override
+    public String getSellerName(Long sellerId) {
+        return userRepository.findById(sellerId).map(user -> user.getFullName()).orElse("Người bán");
+    }
+
+    @Override
+    public String getSellerEmail(Long sellerId) {
+        return userRepository.findById(sellerId).map(user -> user.getEmail()).orElse("Chưa có email");
     }
 
 

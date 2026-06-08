@@ -1,21 +1,14 @@
 package com.ecommerce.order.service.impl;
 
-import ch.qos.logback.core.CoreConstants;
-import com.ecommerce.order.domain.Cart;
-import com.ecommerce.order.domain.CartItem;
-import com.ecommerce.order.domain.Order;
-import com.ecommerce.order.domain.OrderItem;
+import com.ecommerce.order.domain.*;
 import com.ecommerce.order.dto.request.OrderRequest;
+import com.ecommerce.order.dto.response.*;
 import com.ecommerce.order.enums.OrderStatus;
-import com.ecommerce.order.repository.CartItemRepository;
-import com.ecommerce.order.repository.CartRepository;
-import com.ecommerce.order.repository.OrderItemRepository;
-import com.ecommerce.order.repository.OrderRepository;
+import com.ecommerce.order.repository.*;
 import com.ecommerce.order.service.OrderService;
 import com.ecommerce.product.domain.SellerProduct;
-import com.ecommerce.product.repository.SellerProductRepository;
+import com.ecommerce.product.repository.jpa.SellerProductRepository;
 import com.ecommerce.product.service.ProductService;
-import com.ecommerce.user.domain.User;
 import com.ecommerce.user.service.UserService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
-import static com.ecommerce.order.domain.Order.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -37,146 +29,150 @@ public class OrderServiceImpl implements OrderService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final SellerProductRepository sellerProductRepository;
-
     @Override
     @Transactional
     public Order checkout(Long userId, String shippingAddress) {
-
-        User user = userService.getProfileById(userId);
-        userService.validateUserActive(user.getEmail());
-
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
         List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
 
-        Order order = builder()
+        if (cartItems.isEmpty()) throw new RuntimeException("Giỏ hàng trống");
+
+        SellerProduct firstProduct = productService.getSellerProductById(cartItems.getFirst().getSellerProductId());
+        Long sellerId = firstProduct.getSellerId();
+
+        Order order = Order.builder()
                 .userId(userId)
+                .sellerId(sellerId)
                 .shippingAddress(shippingAddress)
                 .orderStatus(OrderStatus.PENDING)
-                .totalPrice(0.0)
+                .paymentMethod("COD")
                 .build();
         Order savedOrder = orderRepository.save(order);
 
-        double finalTotalPrice = 0.0;
-        Long sellerId = null;
-
-        for (CartItem item : cartItems) {
-            SellerProduct sp = productService.getSellerProductById(item.getSellerProductId());
-
-            if (savedOrder.getSellerId() == null) {
-                savedOrder.setSellerId(sp.getSellerId());
-            }
-
-            OrderItem oi = OrderItem.builder()
-                    .orderId(savedOrder.getId())
-                    .sellerProductId(item.getSellerProductId())
-                    .quantity(item.getQuantity())
+        List<OrderItem> orderItems = cartItems.stream().map(ci -> {
+            SellerProduct sp = productService.getSellerProductById(ci.getSellerProductId());
+            return OrderItem.builder()
+                    .order(savedOrder)
+                    .sellerProductId(ci.getSellerProductId())
+                    .productName(sp.getProductName())
+                    .imageUrl(sp.getAvatar())
+                    .quantity(ci.getQuantity())
                     .price(sp.getPrice())
                     .build();
-            orderItemRepository.save(oi);
+        }).collect(Collectors.toList());
 
-            finalTotalPrice += sp.getPrice() * item.getQuantity();
-        }
+        double total = orderItems.stream()
+                .mapToDouble(item -> item.getPrice() * item.getQuantity())
+                .sum();
 
-
-        savedOrder.setTotalPrice(finalTotalPrice);
-        savedOrder.setSellerId(sellerId);
+        savedOrder.setOrderItems(orderItems);
+        savedOrder.setTotalPrice(total);
         orderRepository.save(savedOrder);
 
-
-        cartItemRepository.deleteAllByCartId(cart.getId());
+        cartItemRepository.deleteAll(cartItems);
 
         return savedOrder;
     }
-
     @Override
     @Transactional
-    public Order createOrder(OrderRequest request, String email) {
-        userService.validateUserActive(email);
-        Long buyerId = userService.findIdByEmail(email);
-
-        if (request.items() == null || request.items().isEmpty()) {
-            throw new RuntimeException("Đơn hàng phải có ít nhất một sản phẩm!");
-        }
-
-        Order order = builder()
+    public Order createOrder(Long userId, OrderRequest request) {
+        Order order = Order.builder()
+                .userId(userId)
                 .sellerId(request.sellerId())
-                .userId(buyerId)
                 .shippingAddress(request.shippingAddress())
+                .totalPrice(request.totalPrice())
+                .paymentMethod(request.paymentMethod().name())
                 .orderStatus(OrderStatus.PENDING)
-                .totalPrice(0.0)
                 .build();
 
-        Order savedOrder = orderRepository.save(order);
+        List<OrderItem> orderItems = request.items().stream().map(itemReq -> {
+            var product = sellerProductRepository.findById(itemReq.sellerProductId())
+                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
-        double finalTotalPrice = 0.0;
-        Long sellerIdFromProduct = null;
-
-        for (var itemReq : request.items()) {
-            SellerProduct sp = productService.getSellerProductById(itemReq.sellerProductId());
-
-            if (sp.getStock() < itemReq.quantity()) {
-                throw new RuntimeException("Sản phẩm ID " + sp.getId() + " không đủ hàng!");
-            }
-
-            sp.setStock(sp.getStock() - itemReq.quantity());
-            sellerProductRepository.saveAndFlush(sp);
-
-            log.info(">>>> Đang trừ kho: Sản phẩm ID {}, Số lượng mua {}", sp.getId(), itemReq.quantity());
-
-            if (sellerIdFromProduct == null) {
-                sellerIdFromProduct = sp.getSellerId();
-            }
-
-            OrderItem oi = OrderItem.builder()
-                    .orderId(savedOrder.getId())
+            return OrderItem.builder()
+                    .order(order)
                     .sellerProductId(itemReq.sellerProductId())
+                    .productName(product.getProductName())
+                    .imageUrl(product.getAvatar())
                     .quantity(itemReq.quantity())
-                    .price(sp.getPrice())
+                    .price(itemReq.price())
                     .build();
+        }).collect(Collectors.toList());
 
-            orderItemRepository.save(oi);
-
-            finalTotalPrice += sp.getPrice() * itemReq.quantity();
-        }
-
-        savedOrder.setTotalPrice(finalTotalPrice);
-        savedOrder.setSellerId(sellerIdFromProduct);
-
-        return orderRepository.save(savedOrder);
+        order.setOrderItems(orderItems);
+        return orderRepository.save(order);
+    }
+    @Override
+    public List<OrderResponse> getOrdersByUserId(Long userId) {
+        return orderRepository.findAllByUserId(userId).stream().map(order ->
+                OrderResponse.builder()
+                        .id(order.getId())
+                        .userId(order.getUserId())
+                        .totalPrice(order.getTotalPrice())
+                        .orderStatus(order.getOrderStatus().name())
+                        .shippingAddress(order.getShippingAddress())
+                        .createdAt(order.getCreatedAt())
+                        .items(order.getOrderItems().stream().map(item ->
+                                OrderItemResponse.builder()
+                                        .id(item.getId())
+                                        .sellerProductId(item.getSellerProductId())
+                                        .quantity(item.getQuantity())
+                                        .price(item.getPrice())
+                                        .productName(item.getProductName())
+                                        .imageUrl(item.getImageUrl())
+                                        .build()
+                        ).toList())
+                        .build()
+        ).toList();
     }
 
     @Override
     public Order getOrderById(Long id) {
-        return orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại!"));
+        return orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại!"));
     }
-
 
     @Transactional
     public void updateCartItemQuantity(Long userId, Long sellerProductId, int delta) {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
 
-        CartItem item = cartItemRepository.findByCartIdAndSellerProductId(cart.getId(), sellerProductId)
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không có trong giỏ"));
+        CartItem cartItem = cartItemRepository.findByCartIdAndSellerProductId(cart.getId(), sellerProductId)
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại trong giỏ hàng"));
 
-        int newQuantity = item.getQuantity() + delta;
+
+        int newQuantity = cartItem.getQuantity() + delta;
         if (newQuantity <= 0) {
-            cartItemRepository.delete(item);
+            cartItemRepository.delete(cartItem);
         } else {
-            item.setQuantity(newQuantity);
-            cartItemRepository.save(item);
+            cartItem.setQuantity(newQuantity);
+            cartItemRepository.save(cartItem);
         }
+
     }
 
     @Override
+    @Transactional
     public void updateStatus(Long id, OrderStatus status) {
-        orderRepository.updateStatus(id, status);
+        Order order = getOrderById(id);
+
+        if (status == OrderStatus.CANCELLED && order.getOrderStatus() != OrderStatus.CANCELLED) {
+            List<OrderItem> orderItems = orderItemRepository.findByOrderId(id);
+            for (OrderItem item : orderItems) {
+                SellerProduct sp = sellerProductRepository.findById(item.getSellerProductId())
+                        .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại!"));
+                sp.setStock(sp.getStock() + item.getQuantity());
+                sellerProductRepository.save(sp);
+            }
+            log.info(">>>> Đã hoàn kho cho đơn hàng #{}", id);
+        }
+
+        order.setOrderStatus(status);
+        orderRepository.save(order);
     }
 
     @Override
     public Order findAllByStatus(OrderStatus status) {
-      return  orderRepository.findAllByOrderStatus(status);
+        return orderRepository.findAllByOrderStatus(status);
     }
 }

@@ -26,6 +26,7 @@ public class Conversation {
 
     private Long buyerId;
     private Long sellerId;
+    private Long productSellerId;
 
     private LocalDateTime lastMessageAt;
 

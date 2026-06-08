@@ -1,5 +1,16 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.mariadb.jdbc:mariadb-java-client:3.3.3'
+        classpath 'org.flywaydb:flyway-mysql:10.10.0'
+    }
+}
+
 plugins {
     id 'java-library'
+    id "org.flywaydb.flyway" version "10.10.0"
 }
 
 java {
@@ -8,16 +19,31 @@ java {
     }
 }
 
+flyway {
+    url = 'jdbc:mariadb://localhost:3306/ecommerce_db'
+    user = 'root'
+    password = 'root'
+    cleanDisabled = false
+}
+
 dependencies {
+    implementation project(':modules:product')
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     implementation project(':common')
+
+    // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
-    runtimeOnly 'com.mysql:mysql-connector-j'
+    // Driver kết nối Database khi App chạy
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client:3.3.3'
+
+    // Thư viện Flyway
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-mysql'
+
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
 }

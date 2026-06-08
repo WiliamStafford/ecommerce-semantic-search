@@ -13,4 +13,5 @@ public interface ReviewService {
     List<Review> getReviewsByProduct(Long productId);
 
     Double calculateAverageRating(Long productId);
+    List<Review> getUserReviews(Long userId);
 }

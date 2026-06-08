@@ -1,5 +1,6 @@
 package com.ecommerce.user.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -25,8 +26,8 @@ public record RegisterRequest(
         Integer age,
 
         @Nullable
+        @JsonProperty("phoneNumber")
         @Pattern(regexp = "^\\d{10,11}$", message = "Số điện thoại phải có từ 10-11 chữ số")
         String phone
 ) {
-
 }
