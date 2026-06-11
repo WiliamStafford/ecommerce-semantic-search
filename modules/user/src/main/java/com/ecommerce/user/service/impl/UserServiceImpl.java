@@ -1,8 +1,15 @@
 package com.ecommerce.user.service.impl;
 
+import com.ecommerce.user.domain.Role;
+import com.ecommerce.user.domain.SellerRegistrations;
 import com.ecommerce.user.domain.User;
 import com.ecommerce.user.dto.request.ChangePasswordReq;
+import com.ecommerce.user.dto.request.SellerRegistrationReq;
 import com.ecommerce.user.dto.request.UserUpdateReq;
+import com.ecommerce.user.dto.response.SellerRegistrationDTO;
+import com.ecommerce.user.enums.RegistrationStatus;
+import com.ecommerce.user.repository.RoleRepository;
+import com.ecommerce.user.repository.SellerRegistrationsRepository;
 import com.ecommerce.user.repository.UserRepository;
 import com.ecommerce.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +27,8 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
+    private final SellerRegistrationsRepository sellerRegistrationRepository;
+    private final RoleRepository roleRepository;
     @Override
     public User getProfile(String email) {
         return userRepository.findByEmail(email)
@@ -102,6 +112,96 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
     @Override
     public User getUserById(Long userId) {
         return userRepository.findById(userId).orElseThrow(() -> new RuntimeException(" KHông tìm thấy người dùng với id:" + userId));
+    }
+
+    @Override
+    @Transactional
+    public void promoteToSeller(Long registrationId) {
+        SellerRegistrations reg = sellerRegistrationRepository.findById(registrationId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký!"));
+
+        User user = reg.getUser();
+        Role sellerRole = roleRepository.findByRoleName("ROLE_SELLER");
+        if (sellerRole != null && !user.getRoles().contains(sellerRole)) {
+            user.getRoles().add(sellerRole);
+            userRepository.save(user);
+        }
+        reg.setStatus(RegistrationStatus.ACTIVE);
+        reg.setUpdatedAt(LocalDateTime.now());
+        sellerRegistrationRepository.save(reg);
+    }
+
+    @Override
+    public String getSellerRegistrationStatus(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại!"));
+
+        return sellerRegistrationRepository.findTopByUserIdOrderByCreatedAtDesc(user.getId())
+                .map(reg -> reg.getStatus().toString())
+                .orElse("NOT_REGISTERED");
+    }
+
+    @Override
+    @Transactional
+    public void submitRegistration(String email, SellerRegistrationReq request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+        boolean exists = sellerRegistrationRepository.existsByUser_IdAndStatus(user.getId(), RegistrationStatus.PENDING);
+        if (exists) {
+            throw new RuntimeException("Bạn đã có một đơn đăng ký đang chờ phê duyệt!");
+        }
+        SellerRegistrations reg = new SellerRegistrations();
+        reg.setUser(user);
+        reg.setShopName(request.shopName());
+        reg.setAddress(request.address());
+        reg.setDescription(request.description());
+        reg.setStatus(RegistrationStatus.PENDING);
+        reg.setCreatedAt(LocalDateTime.now()); //
+        sellerRegistrationRepository.save(reg);
+    }
+
+    @Override
+    public List<SellerRegistrationDTO> findAllPending() {
+        return sellerRegistrationRepository.findByStatus(RegistrationStatus.valueOf("PENDING"))
+                .stream()
+                .map(SellerRegistrationDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void rejectRegistration(Long id) {
+        SellerRegistrations reg = sellerRegistrationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đăng ký với ID: " + id));
+        reg.setStatus(RegistrationStatus.REJECTED);
+        reg.setUpdatedAt(LocalDateTime.now());
+        sellerRegistrationRepository.save(reg);
+    }
+
+    @Override
+    public List<User> findAllUsers() {
+        return userRepository.findAll();
+    }
+    @Override
+    public void blockUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+        user.setEnabled(false);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void closeShop(Long id) {
+
+        SellerRegistrations shop = sellerRegistrationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Shop với ID: " + id));
+        shop.setStatus(RegistrationStatus.CLOSED);
+        sellerRegistrationRepository.save(shop);
+    }
+
+    @Override
+    public List<SellerRegistrations> findAllShops() {
+        return sellerRegistrationRepository.findByStatus(RegistrationStatus.valueOf("ACTIVE"));
     }
 
 

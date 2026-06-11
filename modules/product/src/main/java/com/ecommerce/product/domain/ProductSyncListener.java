@@ -77,7 +77,7 @@ public class ProductSyncListener {
                             sellerProduct.getPrice()
                     ))
             );
-            log.info("⚡ Đồng bộ SellerProduct ID: {} thành công", sellerProduct.getId());
+            log.info(" Đồng bộ SellerProduct ID: {} thành công", sellerProduct.getId());
         } catch (Exception e) {
             log.error("Lỗi sync SellerProduct ID {}: {}", sellerProduct.getId(), e.getMessage());
         }

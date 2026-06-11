@@ -27,7 +27,6 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // MySQL chỉ lưu JSON string
     @Column(columnDefinition = "TEXT")
     private String embedding;
 

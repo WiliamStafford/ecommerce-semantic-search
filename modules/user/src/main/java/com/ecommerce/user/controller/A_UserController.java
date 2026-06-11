@@ -3,6 +3,7 @@ package com.ecommerce.user.controller;
 import com.ecommerce.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,7 +19,7 @@ public class A_UserController {
         String msg = enabled ? "Đã mở khóa tài khoản người mua" : "Đã khóa tài khoản người mua";
         return ResponseEntity.ok(msg);
     }
-
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/sellers/{id}/status")
     public ResponseEntity<?> changeSellerStatus(@PathVariable Long id, @RequestParam boolean enabled) {
         userService.updateUserStatus(id, enabled);
@@ -29,5 +30,11 @@ public class A_UserController {
     @GetMapping("/list")
     public ResponseEntity<?> getAllUsersByRole(@RequestParam String role) {
         return ResponseEntity.ok(userService.findAllByRole(role));
+    }
+
+    @PatchMapping("/sellers/{id}/approve")
+    public ResponseEntity<?> approveSeller(@PathVariable Long id) {
+        userService.promoteToSeller(id);
+        return ResponseEntity.ok("Người dùng đã được phê duyệt làm Seller thành công");
     }
 }

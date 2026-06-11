@@ -1,8 +1,11 @@
 package com.ecommerce.user.service;
 
+import com.ecommerce.user.domain.SellerRegistrations;
 import com.ecommerce.user.domain.User;
 import com.ecommerce.user.dto.request.ChangePasswordReq;
+import com.ecommerce.user.dto.request.SellerRegistrationReq;
 import com.ecommerce.user.dto.request.UserUpdateReq;
+import com.ecommerce.user.dto.response.SellerRegistrationDTO;
 
 import java.util.List;
 
@@ -28,4 +31,23 @@ public interface UserService {
 
     User getUserById(Long userId);
 
+
+//seller treatment
+    void promoteToSeller(Long id);
+
+    String getSellerRegistrationStatus(String email);
+
+    void submitRegistration(String email, SellerRegistrationReq request);
+
+    //admin treatment
+    List<SellerRegistrationDTO> findAllPending();
+
+    void rejectRegistration(Long id);
+    List<User> findAllUsers();
+    void blockUser(Long id);
+    void closeShop(Long id);
+
+
+
+    List<SellerRegistrations> findAllShops();
 }

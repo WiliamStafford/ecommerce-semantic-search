@@ -37,5 +37,20 @@ public class UserController {
         return ResponseEntity.ok(u);
     }
 
+    // dành cho ấy trạng thái đăng kí trở thành seller
+    @GetMapping("/seller-registration/status")
+    public ResponseEntity<?> getRegistrationStatus(Principal principal) {
+        String email = principal.getName();
+        var status = userService.getSellerRegistrationStatus(email);
+        return ResponseEntity.ok(status);
+    }
+    // dành cho  trạng thái đăng kí trở thành seller
+    @PostMapping("/seller-registration")
+    public ResponseEntity<?> register(Principal principal,@RequestBody SellerRegistrationReq request) {
+        String email = principal.getName();
+        userService.submitRegistration(email, request);
+        return ResponseEntity.ok( "Đăng ký thành công");
+    }
+
 
 }
