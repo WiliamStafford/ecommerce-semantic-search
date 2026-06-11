@@ -60,7 +60,7 @@ public class ProductSemanticSearchRepositoryImpl {
                                             .field("description")
                                             .query(cleanQuery)
                                             .boost(2f)))
-
+                                    .minimumShouldMatch("1")
                             ))
             );
             return executeSearch(searchRequest, query);
@@ -94,13 +94,87 @@ public class ProductSemanticSearchRepositoryImpl {
         }
     }
 
-    private SearchProductsProjection executeSearch(SearchRequest request, SearchProductsBySemanticQuery query) throws Exception {
-        SearchResponse<ProductDocument> response = esClient.search(request, ProductDocument.class);
-        List<ProductSummaryProjection> products = response.hits().hits().stream()
-                .map(this::mapToProjection).collect(Collectors.toList());
-        int total = response.hits().total() != null ? (int) response.hits().total().value() : products.size();
-        return new SearchProductsProjection(products, total, query.page(), query.size() > 0 ? query.size() : 20);
+//    private SearchProductsProjection executeSearch(SearchRequest request, SearchProductsBySemanticQuery query) throws Exception {
+//        SearchResponse<ProductDocument> response = esClient.search(request, ProductDocument.class);
+//        List<ProductSummaryProjection> products = response.hits().hits().stream()
+//                .map(this::mapToProjection).collect(Collectors.toList());
+//        int total = response.hits().total() != null ? (int) response.hits().total().value() : products.size();
+//
+//
+//
+//        return new SearchProductsProjection(products, total, query.page(), query.size() > 0 ? query.size() : 20);
+//    }
+private SearchProductsProjection executeSearch(
+        SearchRequest request,
+        SearchProductsBySemanticQuery query) throws Exception {
+
+    SearchResponse<ProductDocument> response =
+            esClient.search(request, ProductDocument.class);
+
+    List<Hit<ProductDocument>> hits = response.hits().hits();
+
+    log.info("========== SEARCH DEBUG ==========");
+    log.info("Query: {}", query.q());
+
+    for (int i = 0; i < hits.size(); i++) {
+
+        Hit<ProductDocument> hit = hits.get(i);
+        ProductDocument doc = hit.source();
+
+        float score = hit.score() != null
+                ? hit.score().floatValue()
+                : 0f;
+
+        String productName = doc != null
+                ? doc.getProductName()
+                : "NULL";
+
+        Long productId = doc != null
+                ? doc.getId()
+                : -1L;
+
+        log.info(
+                "Rank={} | Score={} | Id={} | Product={}",
+                i + 1,
+                score,
+                productId,
+                productName
+        );
+
+        // Gap với document kế tiếp
+        if (i < hits.size() - 1
+            && hit.score() != null
+            && hits.get(i + 1).score() != null) {
+
+            float nextScore =
+                    hits.get(i + 1).score().floatValue();
+
+            float gap = score - nextScore;
+
+            log.info(
+                    "      GAP_TO_NEXT={}",
+                    gap
+            );
+        }
     }
+
+    log.info("==================================");
+
+    List<ProductSummaryProjection> products = hits.stream()
+            .map(this::mapToProjection)
+            .collect(Collectors.toList());
+
+    int total = response.hits().total() != null
+            ? (int) response.hits().total().value()
+            : products.size();
+
+    return new SearchProductsProjection(
+            products,
+            total,
+            query.page(),
+            query.size() > 0 ? query.size() : 20
+    );
+}
 
     private ProductSummaryProjection mapToProjection(Hit<ProductDocument> hit) {
         ProductDocument doc = hit.source();
