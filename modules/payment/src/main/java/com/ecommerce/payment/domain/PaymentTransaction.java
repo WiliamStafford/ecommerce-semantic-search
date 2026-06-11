@@ -27,7 +27,6 @@ public class PaymentTransaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // THAY ĐỔI QUAN TRỌNG: Dùng Object thay vì Long ID để hỗ trợ Builder và JPA Relationship
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "session_id", nullable = false)
     private PaymentSession session;

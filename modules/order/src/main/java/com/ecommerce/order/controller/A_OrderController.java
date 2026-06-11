@@ -23,4 +23,8 @@ public class A_OrderController {
         orderService.updateStatus(id, status);
         return ResponseEntity.ok("Cập nhật trạng thái đơn hàng thành công!");
     }
+    @GetMapping("/revenue/sellers")
+    public ResponseEntity<?> getSellerRevenue() {
+        return ResponseEntity.ok(orderService.getSellerRevenueData());
+    }
 }

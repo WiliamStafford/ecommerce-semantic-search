@@ -22,7 +22,6 @@ public class ReturnRefund {
     @Column(name = "refund_amount", nullable = false)
     private Double refundAmount;
 
-    // 🌟 Thêm trường này để lưu URL ảnh minh chứng
     @Column(name = "refund_proof_url", length = 500)
     private String refundProofUrl;
 

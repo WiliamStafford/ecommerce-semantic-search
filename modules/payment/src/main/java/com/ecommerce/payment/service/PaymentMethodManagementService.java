@@ -18,7 +18,6 @@ public class PaymentMethodManagementService {
                     throw new RuntimeException("Payment method already exists");
                 });
 
-        // BỎ UUID.randomUUID(). Hibernate sẽ tự sinh ID sau khi .save()
         StoredPaymentMethod newMethod = new StoredPaymentMethod(
                 userId,
                 command.provider(),
@@ -33,7 +32,6 @@ public class PaymentMethodManagementService {
         paymentStoredMethodRepository.save(newMethod);
     }
 
-    // Đổi UUID methodId thành Long methodId để khớp với DB mới
     public void deactivatePaymentMethod(Long userId, Long methodId) {
         StoredPaymentMethod method = paymentStoredMethodRepository.findById(methodId)
                 .orElseThrow(() -> new RuntimeException("Payment method not found"));
@@ -46,7 +44,6 @@ public class PaymentMethodManagementService {
         paymentStoredMethodRepository.save(method);
     }
 
-    // Đổi UUID methodId thành Long methodId
     public void setDefaultPaymentMethod(Long userId, Long methodId) {
         StoredPaymentMethod newDefault = paymentStoredMethodRepository.findById(methodId)
                 .filter(m -> m.getUserId().equals(userId))

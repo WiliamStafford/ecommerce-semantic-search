@@ -9,6 +9,7 @@ import com.ecommerce.order.service.OrderService;
 import com.ecommerce.product.domain.SellerProduct;
 import com.ecommerce.product.repository.jpa.SellerProductRepository;
 import com.ecommerce.product.service.ProductService;
+import com.ecommerce.user.dto.response.SellerRevenueDTO;
 import com.ecommerce.user.service.UserService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -125,6 +126,27 @@ public class OrderServiceImpl implements OrderService {
                         ).toList())
                         .build()
         ).toList();
+    }
+
+    @Override
+    public List<SellerRevenueDTO> getSellerRevenueData() {
+        List<Object[]> results = orderRepository.calculateRevenueBySeller();
+
+        return results.stream().map(row -> {
+            String shopName = (row[0] != null) ? row[0].toString() : "Shop chưa đặt tên";
+
+            Double totalRevenue = 0.0;
+            if (row[1] != null) {
+                totalRevenue = ((Number) row[1]).doubleValue();
+            }
+
+            Long orderCount = 0L;
+            if (row[2] != null) {
+                orderCount = ((Number) row[2]).longValue();
+            }
+
+            return new SellerRevenueDTO(shopName, totalRevenue, orderCount);
+        }).collect(Collectors.toList());
     }
 
     @Override

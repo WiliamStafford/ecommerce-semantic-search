@@ -3,6 +3,7 @@ package com.ecommerce.order.service;
 import com.ecommerce.order.domain.Order;
 import com.ecommerce.order.dto.request.OrderRequest;
 import com.ecommerce.order.enums.OrderStatus;
+import com.ecommerce.user.dto.response.SellerRevenueDTO;
 import org.springframework.transaction.annotation.Transactional;
 import com.ecommerce.order.dto.response.OrderResponse;
 
@@ -23,5 +24,7 @@ public interface OrderService {
     Order findAllByStatus(OrderStatus status);
 
     List<OrderResponse>  getOrdersByUserId(Long userId);
+
+    List<SellerRevenueDTO> getSellerRevenueData();
 
 }
