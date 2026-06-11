@@ -28,28 +28,39 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Override
     @Transactional
     public void sendResetCode(String email) {
-         resetRepository.deleteByEmail(email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Email này chưa được đăng ký!"));
+        resetRepository.deleteByEmail(email);
         String code = String.format("%06d", new Random().nextInt(1000000));
-
         PasswordResetCode resetCode = PasswordResetCode.builder()
                 .email(email)
                 .code(code)
-                .expirationTime(LocalDateTime.now().plusMinutes(5))
+                .expirationTime(LocalDateTime.now().plusMinutes(5)) // Hiệu lực 5 phút
                 .used(false)
                 .build();
+
         resetRepository.save(resetCode);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("levuhung678@gmail.com");
-        message.setTo(email);
-        message.setSubject("Mã xác nhận khôi phục mật khẩu - Ecommerce App");
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom("levuhung678@gmail.com");
+            message.setTo(email);
+            message.setSubject("Mã xác nhận khôi phục mật khẩu - Ecommerce App");
 
-        String emailContent = "\n\n" +
-                              "Mã xác nhận của bạn là: " + code + "\n\n" +
-                              "Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này để bảo mật tài khoản.";
+            String emailContent = "Chào " + user.getFullName() + ",\n\n" +
+                                  "Bạn vừa yêu cầu khôi phục mật khẩu cho tài khoản FruitFresh.\n" +
+                                  "Mã xác nhận của bạn là: " + code + "\n\n" +
+                                  "Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.\n\n" +
+                                  "Trân trọng,";
 
-        message.setText(emailContent);
-        mailSender.send(message);
+            message.setText(emailContent);
+            mailSender.send(message);
+
+            log.info("Đã gửi mã xác nhận thành công tới email: {}", email);
+        } catch (Exception e) {
+            log.error("Lỗi gửi email tới {}: {}", email, e.getMessage());
+            throw new RuntimeException("Không thể gửi email, vui lòng thử lại sau!");
+        }
     }
 
     @Override
@@ -61,12 +72,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         if (resetCode.isExpired()) {
             throw new RuntimeException("Mã này đã hết hạn sử dụng!");
         }
-
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email này!"));
-
         user.setPassword(passwordEncoder.encode(request.newPassword()));
-        userRepository.save(user);
         resetRepository.delete(resetCode);
     }
 }
