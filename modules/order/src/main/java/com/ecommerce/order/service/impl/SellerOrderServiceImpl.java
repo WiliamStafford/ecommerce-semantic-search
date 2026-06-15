@@ -33,23 +33,37 @@ public class SellerOrderServiceImpl implements SellerOrderService {
         List<Order> dbOrders = orderRepository.findBySellerId(sellerId);
 
         return dbOrders.stream()
-                .map(order -> new SellerOrderResponse(
-                        order.getId(),
-                        "ORD-" + order.getId(),
-                        order.getTotalPrice(),
-                        order.getShippingAddress(),
-                        order.getOrderStatus(),
-                        order.getCreatedAt(),
-                        order.getOrderItems().stream().map(item ->
-                                OrderItemResponse.builder()
-                                        .id(item.getId())
-                                        .productName(item.getProductName())
-                                        .quantity(item.getQuantity())
-                                        .price(item.getPrice())
-                                        .imageUrl(item.getImageUrl())
-                                        .build()
-                        ).toList()
-                ))
+                .map(order -> {
+                    // Nối chuỗi địa chỉ từ object Address
+                    String fullAddress = "Chưa có địa chỉ";
+                    if (order.getAddress() != null) {
+                        var addr = order.getAddress();
+                        fullAddress = String.format("%s, %s, %s, %s, %s",
+                                addr.getHouseNumber(),
+                                addr.getStreet(),
+                                addr.getWard(),
+                                addr.getDistrict(),
+                                addr.getProvince());
+                    }
+
+                    return new SellerOrderResponse(
+                            order.getId(),
+                            "ORD-" + order.getId(),
+                            order.getTotalPrice(),
+                            fullAddress,
+                            order.getOrderStatus(),
+                            order.getCreatedAt(),
+                            order.getOrderItems().stream().map(item ->
+                                    OrderItemResponse.builder()
+                                            .id(item.getId())
+                                            .productName(item.getProductName())
+                                            .quantity(item.getQuantity())
+                                            .price(item.getPrice())
+                                            .imageUrl(item.getImageUrl())
+                                            .build()
+                            ).toList()
+                    );
+                })
                 .toList();
     }
 
@@ -60,7 +74,6 @@ public class SellerOrderServiceImpl implements SellerOrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng với ID: " + orderId));
 
-        // 🌟 Logic mới: Trừ kho khi chuyển sang trạng thái DELIVERED
         if (status == OrderStatus.DELIVERED && order.getOrderStatus() != OrderStatus.DELIVERED) {
             log.info(">>>> [ORDER-SERVICE] Đơn hàng {} được giao thành công, tiến hành trừ tồn kho...", orderId);
             for (OrderItem item : order.getOrderItems()) {

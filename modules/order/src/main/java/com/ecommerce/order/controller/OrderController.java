@@ -1,8 +1,10 @@
 package com.ecommerce.order.controller;
 
+import com.ecommerce.order.domain.Order;
 import com.ecommerce.order.dto.request.OrderRequest;
 import com.ecommerce.order.enums.OrderStatus;
 import com.ecommerce.order.service.OrderService;
+import com.ecommerce.user.domain.Address;
 import com.ecommerce.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
@@ -25,11 +29,7 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrdersByUserId(userId));
     }
 
-    @PostMapping("/checkout")
-    public ResponseEntity<?> checkout(@RequestParam String address, Principal principal) {
-        Long userId = userService.findIdByEmail(principal.getName());
-        return ResponseEntity.ok(orderService.checkout(userId, address));
-    }
+
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getOrdersByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(orderService.getOrdersByUserId(userId));
@@ -48,17 +48,25 @@ public class OrderController {
         return ResponseEntity.ok("Cập nhật trạng thái thành công!");
     }
 
-    @PostMapping("/buy-now")
-    public ResponseEntity<?> buyNow(@RequestBody OrderRequest request, Principal principal) {
-        log.info(">>>> User {} thực hiện đặt hàng nhanh", principal.getName());
-        Long userId = userService.findIdByEmail(principal.getName());
-        return ResponseEntity.ok(orderService.checkout(userId, request.getShippingAddress()));
-    }
 
     @PostMapping("/buy_right_now")
     public ResponseEntity<?> buyRightNow(@RequestBody OrderRequest request, Principal principal) {
         log.info(">>>> User {} thực hiện đặt hàng nhanh (Buy Right Now)", principal.getName());
         Long userId = userService.findIdByEmail(principal.getName());
         return ResponseEntity.ok(orderService.createOrder(userId, request));
+    }
+
+    @PostMapping("/checkout")
+    public ResponseEntity<?> checkout(@RequestParam Long addressId, Principal principal) {
+        Long userId = userService.findIdByEmail(principal.getName());
+        return ResponseEntity.ok(orderService.checkout(userId, addressId));
+    }
+
+    @PostMapping("/buy-now")
+    public ResponseEntity<?> buyNow(@RequestBody OrderRequest request, Principal principal) {
+        Long userId = userService.findIdByEmail(principal.getName());
+        List<Order> orders = orderService.processOrderRequest(userId, request);
+
+        return ResponseEntity.ok(orders);
     }
 }

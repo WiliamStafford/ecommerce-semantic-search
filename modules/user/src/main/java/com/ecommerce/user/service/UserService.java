@@ -50,4 +50,6 @@ public interface UserService {
 
 
     List<SellerRegistrations> findAllShops();
+
+    User findById(Long userId);
 }

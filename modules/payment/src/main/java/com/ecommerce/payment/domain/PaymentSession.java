@@ -16,7 +16,7 @@ import java.util.UUID;
 @Table(name = "payment_sessions")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class PaymentSession {
+public class  PaymentSession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // Database tự sinh ID

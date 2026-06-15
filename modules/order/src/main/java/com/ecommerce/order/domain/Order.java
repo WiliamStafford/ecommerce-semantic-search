@@ -1,6 +1,7 @@
 package com.ecommerce.order.domain;
 
 import com.ecommerce.order.enums.OrderStatus;
+import com.ecommerce.user.domain.Address; // Import entity Address mới
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,13 +18,16 @@ public class Order {
 
     private Long userId;
     private Long sellerId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status", length = 20)
     private OrderStatus orderStatus;
 
-    private String shippingAddress;
-    private Double totalPrice;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
+    private Address address;
 
+    private Double totalPrice;
     private String paymentMethod;
 
     private LocalDateTime createdAt;
@@ -42,11 +46,5 @@ public class Order {
         if (this.paymentMethod == null) {
             this.paymentMethod = "COD";
         }
-    }
-
-    public String getPaymentType() {
-        return (this.paymentMethod != null && !this.paymentMethod.isEmpty())
-                ? this.paymentMethod
-                : "COD";
     }
 }

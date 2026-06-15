@@ -1,5 +1,6 @@
 package com.ecommerce.user.service.impl;
 
+import com.ecommerce.user.domain.Address;
 import com.ecommerce.user.domain.Role;
 import com.ecommerce.user.domain.SellerRegistrations;
 import com.ecommerce.user.domain.User;
@@ -8,6 +9,7 @@ import com.ecommerce.user.dto.request.SellerRegistrationReq;
 import com.ecommerce.user.dto.request.UserUpdateReq;
 import com.ecommerce.user.dto.response.SellerRegistrationDTO;
 import com.ecommerce.user.enums.RegistrationStatus;
+import com.ecommerce.user.repository.AddressRepository;
 import com.ecommerce.user.repository.RoleRepository;
 import com.ecommerce.user.repository.SellerRegistrationsRepository;
 import com.ecommerce.user.repository.UserRepository;
@@ -29,6 +31,7 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
     private final PasswordEncoder passwordEncoder;
     private final SellerRegistrationsRepository sellerRegistrationRepository;
     private final RoleRepository roleRepository;
+    private final AddressRepository addressRepository;
     @Override
     public User getProfile(String email) {
         return userRepository.findByEmail(email)
@@ -40,21 +43,26 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
     public User updateProfile(String email, UserUpdateReq request) {
         User user = getProfile(email);
 
-        if (request.fullName() != null && !request.fullName().isBlank()) {
-            user.setFullName(request.fullName());
+        if (request.fullName() != null && !request.fullName().isBlank()) user.setFullName(request.fullName());
+        if (request.avatar() != null && !request.avatar().isBlank()) user.setAvatar(request.avatar());
+        if (request.age() != null) user.setAge(request.age());
+        if (request.phone() != null && !request.phone().isBlank()) user.setPhone(request.phone());
+
+        Address address = user.getAddresses().stream()
+                .filter(Address::isDefault)
+                .findFirst()
+                .orElse(user.getAddresses().stream().findFirst().orElse(null));
+
+        if (address == null) {
+            address = Address.builder().user(user).isDefault(true).build();
+            user.addAddress(address);
         }
 
-        if (request.avatar() != null && !request.avatar().isBlank()) {
-            user.setAvatar(request.avatar());
-        }
-
-        if (request.age() != null) {
-            user.setAge(request.age());
-        }
-
-        if (request.phone() != null && !request.phone().isBlank()) {
-            user.setPhone(request.phone());
-        }
+        if (request.province() != null && !request.province().isBlank()) address.setProvince(request.province());
+        if (request.district() != null && !request.district().isBlank()) address.setDistrict(request.district());
+        if (request.ward() != null && !request.ward().isBlank()) address.setWard(request.ward());
+        if (request.street() != null && !request.street().isBlank()) address.setStreet(request.street());
+        if (request.houseNumber() != null && !request.houseNumber().isBlank()) address.setHouseNumber(request.houseNumber());
 
         return userRepository.save(user);
     }
@@ -75,7 +83,7 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
     @Override
     public void validateUserActive(String email) {
         User user = getProfile(email);
-        if (!user.getEnabled()) {
+        if (!user.isEnabled()) {
             throw new RuntimeException("Tài khoản của bạn đã bị Admin vô hiệu hóa!");
         }
     }
@@ -202,6 +210,11 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
     @Override
     public List<SellerRegistrations> findAllShops() {
         return sellerRegistrationRepository.findByStatus(RegistrationStatus.valueOf("ACTIVE"));
+    }
+
+    @Override
+    public User findById(Long userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
     }
 
 

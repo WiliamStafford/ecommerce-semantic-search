@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 public class MigrationController {
     private final DataMigrationService dataMigrationService;
     private final ProductSyncService productSyncService;
+
     @PostMapping("/migrate-vectors")
     public ResponseEntity<String> migrateVectors() {
         CompletableFuture.runAsync(() -> {

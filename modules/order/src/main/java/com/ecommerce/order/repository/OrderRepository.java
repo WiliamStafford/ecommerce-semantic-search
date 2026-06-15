@@ -32,4 +32,33 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                    "WHERE o.order_status = 'DELIVERED' " +
                    "GROUP BY sr.shop_name", nativeQuery = true)
     List<Object[]> calculateRevenueBySeller();
+
+    @Query("SELECT FUNCTION('YEAR', o.createdAt), SUM(o.totalPrice), COUNT(o.id) " +
+           "FROM Order o " +
+           "WHERE o.orderStatus = 'COMPLETED' " +
+           "GROUP BY FUNCTION('YEAR', o.createdAt)")
+    List<Object[]> getRevenueStatisticsByYear();
+
+    @Query(value = "SELECT oi.product_name, SUM(oi.quantity) as sold_qty, SUM(oi.price * oi.quantity) as revenue " +
+                   "FROM order_item oi " +
+                   "JOIN orders o ON oi.order_id = o.id " +
+                   "WHERE o.order_status = 'COMPLETED' " +
+                   "GROUP BY oi.seller_product_id, oi.product_name " +
+                   "ORDER BY sold_qty DESC LIMIT 10", nativeQuery = true)
+    List<Object[]> getProductStatistics();
+
+    @Query("SELECT FUNCTION('YEAR', o.createdAt), SUM(o.totalPrice), COUNT(o.id) " +
+           "FROM Order o " +
+           "WHERE o.orderStatus = 'DELIVERED' AND o.sellerId = :sellerId " + // Đã sửa
+           "GROUP BY FUNCTION('YEAR', o.createdAt)")
+    List<Object[]> getRevenueStatisticsByYearForSeller(@Param("sellerId") Long sellerId);
+
+    @Query(value = "SELECT oi.product_name, SUM(oi.quantity) as sold_qty, SUM(oi.price * oi.quantity) as revenue " +
+                   "FROM order_item oi " +
+                   "JOIN orders o ON oi.order_id = o.id " +
+                   "WHERE o.order_status = 'DELIVERED' AND o.seller_id = :sellerId " + // Đã sửa
+                   "GROUP BY oi.seller_product_id, oi.product_name " +
+                   "ORDER BY sold_qty DESC LIMIT 10", nativeQuery = true)
+    List<Object[]> getProductStatisticsBySeller(@Param("sellerId") Long sellerId);
+
 }

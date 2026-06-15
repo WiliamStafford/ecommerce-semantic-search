@@ -1,10 +1,14 @@
 package com.ecommerce.user.dto.request;
 
 import org.springframework.lang.Nullable;
-
 public record UserUpdateReq(
-        @Nullable String fullName,
-        @Nullable String avatar,
-        @Nullable Integer age,
-        @Nullable String phone
+        String fullName,
+        String phone,
+        String avatar,
+        Integer age,
+        String province,
+        String district,
+        String ward,
+        String street,
+        String houseNumber
 ) {}

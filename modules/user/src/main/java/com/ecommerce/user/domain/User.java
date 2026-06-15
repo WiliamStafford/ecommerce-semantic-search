@@ -7,10 +7,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+
 @Entity
 @Table(name = "users")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,6 +19,7 @@ public class User {
     @Column(unique = true, nullable = false, length = 100)
     private String email;
 
+    @JsonIgnore // Bảo mật: Không trả về password qua JSON
     private String password;
 
     @Column(name = "full_name")
@@ -34,14 +35,11 @@ public class User {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore // Tránh vòng lặp vô tận khi serialize JSON
+    private Set<Address> addresses = new HashSet<>();
 
-    public boolean getEnabled() {
-        return enabled;
-    }
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
     @JsonIgnore
@@ -52,7 +50,18 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
     public boolean isEnabled() {
         return enabled;
+    }
+
+
+    public void addAddress(Address address) {
+        addresses.add(address);
+        address.setUser(this);
     }
 }
