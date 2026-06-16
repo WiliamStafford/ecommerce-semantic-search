@@ -46,6 +46,7 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAllActiveBySeller(sellerId));
     }
 
+
     @CrossOrigin("*")
     @GetMapping("/detail/{id}")
     public ResponseEntity<?> getProductDetail(@PathVariable Long id) {

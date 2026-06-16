@@ -24,4 +24,17 @@ public class Address {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Address)) return false;
+        Address address = (Address) o;
+        return id != null && id.equals(address.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return 31; //
+    }
 }

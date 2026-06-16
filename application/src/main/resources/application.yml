@@ -30,8 +30,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-#        dialect: org.hibernate.dialect.MySQLDialect
-        physical_strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        database-platform: org.hibernate.dialect.MySQL5Dialect
 
   flyway:
     enabled: true
@@ -42,7 +41,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: ${MAIL_USERNAME}
-    password: ""
+    password:
     properties:
       mail:
         smtp:

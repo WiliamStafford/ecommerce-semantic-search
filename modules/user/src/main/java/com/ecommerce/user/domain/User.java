@@ -19,7 +19,7 @@ public class User {
     @Column(unique = true, nullable = false, length = 100)
     private String email;
 
-    @JsonIgnore // Bảo mật: Không trả về password qua JSON
+    @JsonIgnore //
     private String password;
 
     @Column(name = "full_name")

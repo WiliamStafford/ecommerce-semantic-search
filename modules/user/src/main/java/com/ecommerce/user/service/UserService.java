@@ -6,6 +6,7 @@ import com.ecommerce.user.dto.request.ChangePasswordReq;
 import com.ecommerce.user.dto.request.SellerRegistrationReq;
 import com.ecommerce.user.dto.request.UserUpdateReq;
 import com.ecommerce.user.dto.response.SellerRegistrationDTO;
+import com.ecommerce.user.dto.response.UserResponseDTO;
 
 import java.util.List;
 
@@ -49,7 +50,12 @@ public interface UserService {
 
 
 
-    List<SellerRegistrations> findAllShops();
+    List<SellerRegistrationDTO> findAllShops();
 
     User findById(Long userId);
+
+    void updateUserByAdmin(Long id, UserUpdateReq request);
+
+    List<UserResponseDTO> getAllUsersWithAddress();
+    List<UserResponseDTO> findAllUsersWithAddressByRole(String role);
 }

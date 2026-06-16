@@ -53,6 +53,7 @@ public class SharedSecurityConfig {
                                 "/api/v1/payments/webhook/**",
                                 "/ws-chat/**"
                         ).permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/v1/seller/**").hasAuthority("ROLE_SELLER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers("/api/v1/chat/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_SELLER")

@@ -331,6 +331,7 @@ public class ProductServiceImpl implements ProductService {
                 .sellerProductId(sp.getId())
                 .productName(sp.getName() != null ? sp.getName() : (p != null ? p.getProductName() : "Sản phẩm"))
                 .price(sp.getPrice())
+                .stock(sp.getStock())
                 .avatar(sp.getImageUrl() != null ? sp.getImageUrl() : (p != null ? p.getAvatar() : null))
                 .isFavorite(false)
                 .build();

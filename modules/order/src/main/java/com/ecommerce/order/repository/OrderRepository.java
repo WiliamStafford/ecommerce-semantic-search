@@ -46,19 +46,38 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                    "GROUP BY oi.seller_product_id, oi.product_name " +
                    "ORDER BY sold_qty DESC LIMIT 10", nativeQuery = true)
     List<Object[]> getProductStatistics();
-
-    @Query("SELECT FUNCTION('YEAR', o.createdAt), SUM(o.totalPrice), COUNT(o.id) " +
-           "FROM Order o " +
-           "WHERE o.orderStatus = 'DELIVERED' AND o.sellerId = :sellerId " + // Đã sửa
-           "GROUP BY FUNCTION('YEAR', o.createdAt)")
+    // 1. Thống kê theo năm (Native Query)
+    @Query(value = "SELECT YEAR(o.created_at) as time_period, " +
+                   "COALESCE(SUM(o.total_price), 0.0), COALESCE(COUNT(o.id), 0) " +
+                   "FROM orders o " +
+                   "WHERE o.order_status = 'DELIVERED' AND o.seller_id = :sellerId " +
+                   "GROUP BY YEAR(o.created_at)", nativeQuery = true)
     List<Object[]> getRevenueStatisticsByYearForSeller(@Param("sellerId") Long sellerId);
 
-    @Query(value = "SELECT oi.product_name, SUM(oi.quantity) as sold_qty, SUM(oi.price * oi.quantity) as revenue " +
+    // 2. Thống kê sản phẩm (Native Query)
+    @Query(value = "SELECT oi.product_name, " +
+                   "COALESCE(SUM(oi.quantity), 0), " +
+                   "COALESCE(SUM(oi.price * oi.quantity), 0.0) " +
                    "FROM order_item oi " +
                    "JOIN orders o ON oi.order_id = o.id " +
-                   "WHERE o.order_status = 'DELIVERED' AND o.seller_id = :sellerId " + // Đã sửa
-                   "GROUP BY oi.seller_product_id, oi.product_name " +
-                   "ORDER BY sold_qty DESC LIMIT 10", nativeQuery = true)
+                   "WHERE o.order_status = 'DELIVERED' AND o.seller_id = :sellerId " +
+                   "GROUP BY oi.product_name " +
+                   "ORDER BY SUM(oi.quantity) DESC LIMIT 10", nativeQuery = true)
     List<Object[]> getProductStatisticsBySeller(@Param("sellerId") Long sellerId);
+
+    // 3. Thống kê linh hoạt theo Period (Native Query)
+    @Query(value = "SELECT " +
+                   "CASE " +
+                   "  WHEN :periodType = 'MONTH' THEN MONTH(o.created_at) " +
+                   "  WHEN :periodType = 'WEEK' THEN WEEK(o.created_at) " +
+                   "  ELSE YEAR(o.created_at) " +
+                   "END as time_period, " +
+                   "COALESCE(SUM(o.total_price), 0.0) as revenue, " +
+                   "COALESCE(COUNT(o.id), 0) as count " +
+                   "FROM orders o " +
+                   "WHERE o.order_status = 'DELIVERED' AND o.seller_id = :sellerId " +
+                   "GROUP BY time_period", nativeQuery = true)
+    List<Object[]> getStatsByPeriod(@Param("sellerId") Long sellerId, @Param("periodType") String periodType);
+
 
 }

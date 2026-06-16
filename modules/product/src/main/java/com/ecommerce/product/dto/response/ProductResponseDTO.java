@@ -16,7 +16,9 @@ public class ProductResponseDTO {
     private String avatar;
     private String description;
     private double averageRating;
+    private Integer stock;
     private boolean isFavorite;
+
 
 
 

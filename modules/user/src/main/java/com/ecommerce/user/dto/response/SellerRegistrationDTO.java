@@ -13,6 +13,7 @@ public class SellerRegistrationDTO {
     private String description;
     private String status;
     private String userEmail;
+    private String userId;
 
     public static SellerRegistrationDTO fromEntity(SellerRegistrations reg) {
         return SellerRegistrationDTO.builder()
@@ -22,6 +23,7 @@ public class SellerRegistrationDTO {
                 .description(reg.getDescription())
                 .status(String.valueOf(reg.getStatus()))
                 .userEmail(reg.getUser().getEmail())
+                .userId(String.valueOf(reg.getUser().getId()))
                 .build();
     }
 }

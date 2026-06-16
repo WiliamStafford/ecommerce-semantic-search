@@ -8,6 +8,7 @@ import com.ecommerce.user.dto.request.ChangePasswordReq;
 import com.ecommerce.user.dto.request.SellerRegistrationReq;
 import com.ecommerce.user.dto.request.UserUpdateReq;
 import com.ecommerce.user.dto.response.SellerRegistrationDTO;
+import com.ecommerce.user.dto.response.UserResponseDTO;
 import com.ecommerce.user.enums.RegistrationStatus;
 import com.ecommerce.user.repository.AddressRepository;
 import com.ecommerce.user.repository.RoleRepository;
@@ -32,6 +33,7 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
     private final SellerRegistrationsRepository sellerRegistrationRepository;
     private final RoleRepository roleRepository;
     private final AddressRepository addressRepository;
+
     @Override
     public User getProfile(String email) {
         return userRepository.findByEmail(email)
@@ -62,7 +64,8 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
         if (request.district() != null && !request.district().isBlank()) address.setDistrict(request.district());
         if (request.ward() != null && !request.ward().isBlank()) address.setWard(request.ward());
         if (request.street() != null && !request.street().isBlank()) address.setStreet(request.street());
-        if (request.houseNumber() != null && !request.houseNumber().isBlank()) address.setHouseNumber(request.houseNumber());
+        if (request.houseNumber() != null && !request.houseNumber().isBlank())
+            address.setHouseNumber(request.houseNumber());
 
         return userRepository.save(user);
     }
@@ -190,6 +193,7 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
     public List<User> findAllUsers() {
         return userRepository.findAll();
     }
+
     @Override
     public void blockUser(Long id) {
         User user = userRepository.findById(id)
@@ -207,14 +211,77 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
         sellerRegistrationRepository.save(shop);
     }
 
+    //    @Override
+//    public List<SellerRegistrations> findAllShops() {
+//        return sellerRegistrationRepository.findByStatus(RegistrationStatus.valueOf("ACTIVE"));
+//    }
     @Override
-    public List<SellerRegistrations> findAllShops() {
-        return sellerRegistrationRepository.findByStatus(RegistrationStatus.valueOf("ACTIVE"));
+    public List<SellerRegistrationDTO> findAllShops() {
+        return sellerRegistrationRepository.findByStatus(RegistrationStatus.ACTIVE)
+                .stream()
+                .map(SellerRegistrationDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @Override
     public User findById(Long userId) {
         return userRepository.findById(userId).orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+    }
+
+    @Override
+    @Transactional
+    public void updateUserByAdmin(Long id, UserUpdateReq request) {
+        // 1. Tìm user kèm địa chỉ
+        User user = userRepository.findByIdWithAddresses(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user với ID: " + id));
+
+        // 2. Cập nhật thông tin User (Check thay đổi để tránh cập nhật thừa)
+        if (request.fullName() != null && !request.fullName().isBlank()) {
+            user.setFullName(request.fullName());
+        }
+
+        if (request.age() != null) {
+            user.setAge(request.age());
+        }
+
+        // 3. Xử lý Phone: Chỉ check trùng nếu phone mới khác phone cũ
+        if (request.phone() != null && !request.phone().isBlank()) {
+            if (!request.phone().equals(user.getPhone())) {
+                // Kiểm tra xem số mới có đang thuộc về user khác không
+                if (userRepository.existsByPhone(request.phone())) {
+                    throw new RuntimeException("Số điện thoại " + request.phone() + " đã được sử dụng bởi người dùng khác!");
+                }
+                user.setPhone(request.phone());
+            }
+        }
+
+        // 4. Xử lý Address an toàn
+        Address address = user.getAddresses().stream()
+                .filter(Address::isDefault)
+                .findFirst()
+                .orElseGet(() -> user.getAddresses().isEmpty() ? null : user.getAddresses().iterator().next());
+
+        if (address == null) {
+            address = Address.builder()
+                    .user(user)
+                    .isDefault(true)
+                    .fullName(user.getFullName())
+                    .phone(user.getPhone())
+                    .build();
+            user.addAddress(address);
+        }
+
+        // 5. Cập nhật địa chỉ với dữ liệu sạch
+        if (request.province() != null) address.setProvince(request.province());
+        if (request.district() != null) address.setDistrict(request.district());
+        if (request.ward() != null) address.setWard(request.ward());
+        if (request.street() != null) address.setStreet(request.street());
+        if (request.houseNumber() != null) address.setHouseNumber(request.houseNumber());
+
+        // Vì có @Transactional, user đã được quản lý (managed),
+        // Hibernate sẽ tự động lưu thay đổi khi kết thúc hàm mà không cần gọi save() tường minh.
+        // Tuy nhiên, giữ lại nếu bạn muốn flush dữ liệu ngay lập tức.
+        userRepository.save(user);
     }
 
 
@@ -228,5 +295,52 @@ public class UserServiceImpl implements UserService, com.ecommerce.product.servi
         return userRepository.findById(sellerId).map(user -> user.getEmail()).orElse("Chưa có email");
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserResponseDTO> getAllUsersWithAddress() {
+        return userRepository.findAllWithAddresses().stream().map(user -> {
+            Address addr = user.getAddresses().stream()
+                    .filter(Address::isDefault).findFirst()
+                    .orElse(user.getAddresses().stream().findFirst().orElse(null));
+
+            return new UserResponseDTO(
+                    user.getId(),
+                    user.getEmail(),
+                    user.getFullName(),
+                    user.getPhone(),
+                    user.getAge(),
+                    user.isEnabled(),
+                    addr != null ? addr.getProvince() : "",
+                    addr != null ? addr.getDistrict() : "",
+                    addr != null ? addr.getWard() : "",
+                    addr != null ? addr.getStreet() : "",
+                    addr != null ? addr.getHouseNumber() : ""
+            );
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserResponseDTO> findAllUsersWithAddressByRole(String role) {
+        return userRepository.findAllByRoleName(role.toUpperCase()).stream().map(user -> {
+            Address addr = user.getAddresses().stream()
+                    .filter(Address::isDefault).findFirst()
+                    .orElse(user.getAddresses().stream().findFirst().orElse(null));
+
+            return new UserResponseDTO(
+                    user.getId(),
+                    user.getFullName(),
+                    user.getEmail(),
+                    user.getPhone(),
+                    user.getAge(),
+                    user.isEnabled(),
+                    addr != null ? addr.getProvince() : "",
+                    addr != null ? addr.getDistrict() : "",
+                    addr != null ? addr.getWard() : "",
+                    addr != null ? addr.getStreet() : "",
+                    addr != null ? addr.getHouseNumber() : ""
+            );
+        }).collect(Collectors.toList());
+    }
 
 }
