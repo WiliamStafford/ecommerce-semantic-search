@@ -20,12 +20,12 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/ecomhub_db?createDatabaseIfNotExist=true&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8
     username: root
-    password: root
+    password:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -41,7 +41,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: ${MAIL_USERNAME}
-    password:
+    password: nkux nvdd ymbt uglj
     properties:
       mail:
         smtp:

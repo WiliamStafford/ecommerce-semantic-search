@@ -73,10 +73,29 @@ public class ProductSemanticSearchServiceImpl implements ProductSemanticSearchUs
         String q = query.toLowerCase();
         List<Integer> categories = new ArrayList<>();
 
-        if (q.contains("rau") || q.contains("salad")) categories.add(100);
-        if (q.contains("nước") || q.contains("dừa") || q.contains("cam") || q.contains("trái cây")) categories.add(200);
-        if (q.contains("lá") || q.contains("tiêu") || q.contains("hạt") || q.contains("gia vị")) categories.add(300);
-        if (q.contains("não bộ") || q.contains("trí nhớ") || q.contains("bổ não") || q.contains("thông minh")) categories.add(600);
+        if (q.contains("rau") || q.contains("salad") || q.contains("cải") || q.contains("xà lách")) {
+            categories.add(3);
+        }
+
+        if (q.contains("dừa") || q.contains("cam") || q.contains("trái cây") || q.contains("quả") || q.contains("bưởi") || q.contains("mít") || q.contains("ổi")) {
+            categories.add(5);
+        }
+
+        if (q.contains("sầu riêng") || q.contains("mít") || q.contains("khóm")) {
+            categories.add(7);
+        }
+
+        if (q.contains("lá") || q.contains("tiêu") || q.contains("thảo mộc") || q.contains("gia vị") || q.contains("tía tô") || q.contains("bạc hà")) {
+            categories.add(6);
+        }
+
+        if (q.contains("não bộ") || q.contains("trí nhớ") || q.contains("bổ não") || q.contains("hạt sen")) {
+            categories.add(12);
+        }
+
+        if (q.contains("hạt") || q.contains("hạnh nhân") || q.contains("hạt điều") || q.contains("hạt chia") || q.contains("óc chó") || q.contains("tim mạch")) {
+            categories.add(13);
+        }
 
         return categories;
     }

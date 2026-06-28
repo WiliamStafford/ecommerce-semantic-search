@@ -1,0 +1,1 @@
+ALTER TABLE conversation ADD COLUMN product_seller_id BIGINT;

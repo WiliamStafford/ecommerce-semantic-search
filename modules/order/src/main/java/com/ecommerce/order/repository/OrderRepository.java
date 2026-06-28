@@ -26,12 +26,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findBySellerId(Long sellerId);
 
-    @Query(value = "SELECT sr.shop_name, SUM(o.total_price), COUNT(o.id) " +
-                   "FROM orders o " +
-                   "LEFT JOIN seller_registrations sr ON o.seller_id = sr.user_id " +
-                   "WHERE o.order_status = 'DELIVERED' " +
-                   "GROUP BY sr.shop_name", nativeQuery = true)
-    List<Object[]> calculateRevenueBySeller();
+@Query(value = "SELECT COALESCE(sr.shop_name, 'Unknown Shop'), " +
+               "COALESCE(sr.user_id, 0), " +
+               "SUM(o.total_price), " +
+               "COUNT(o.id) " +
+               "FROM orders o " +
+               "INNER JOIN seller_registrations sr ON o.seller_id = sr.user_id " + // Use INNER JOIN
+               "WHERE o.order_status = 'DELIVERED' " +
+               "GROUP BY sr.shop_name, sr.user_id", nativeQuery = true)
+List<Object[]> calculateRevenueBySeller();
 
     @Query("SELECT FUNCTION('YEAR', o.createdAt), SUM(o.totalPrice), COUNT(o.id) " +
            "FROM Order o " +
@@ -40,7 +43,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Object[]> getRevenueStatisticsByYear();
 
     @Query(value = "SELECT oi.product_name, SUM(oi.quantity) as sold_qty, SUM(oi.price * oi.quantity) as revenue " +
-                   "FROM order_item oi " +
+                   "FROM order_items oi " +
                    "JOIN orders o ON oi.order_id = o.id " +
                    "WHERE o.order_status = 'COMPLETED' " +
                    "GROUP BY oi.seller_product_id, oi.product_name " +
@@ -58,13 +61,24 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query(value = "SELECT oi.product_name, " +
                    "COALESCE(SUM(oi.quantity), 0), " +
                    "COALESCE(SUM(oi.price * oi.quantity), 0.0) " +
-                   "FROM order_item oi " +
+                   "FROM order_items oi " +
                    "JOIN orders o ON oi.order_id = o.id " +
                    "WHERE o.order_status = 'DELIVERED' AND o.seller_id = :sellerId " +
                    "GROUP BY oi.product_name " +
                    "ORDER BY SUM(oi.quantity) DESC LIMIT 10", nativeQuery = true)
     List<Object[]> getProductStatisticsBySeller(@Param("sellerId") Long sellerId);
 
+    @Query(value = "SELECT p.id, " +
+                   "oi.product_name, " +
+                   "COALESCE(SUM(oi.quantity), 0), " +
+                   "COALESCE(SUM(oi.price * oi.quantity), 0.0) " +
+                   "FROM order_items oi " +
+                   "JOIN products p ON oi.product_name = p.product_name " + // Nối qua tên sản phẩm
+                   "JOIN orders o ON oi.order_id = o.id " +
+                   "WHERE o.order_status = 'DELIVERED' AND o.seller_id = :sellerId " +
+                   "GROUP BY p.id, oi.product_name " +
+                   "ORDER BY SUM(oi.quantity) DESC LIMIT 10", nativeQuery = true)
+    List<Object[]> getProductStatisticsBySellerForAdmin(@Param("sellerId") Long sellerId);
     // 3. Thống kê linh hoạt theo Period (Native Query)
     @Query(value = "SELECT " +
                    "CASE " +

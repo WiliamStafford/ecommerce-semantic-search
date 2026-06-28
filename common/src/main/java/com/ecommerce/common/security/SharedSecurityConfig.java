@@ -54,7 +54,7 @@ public class SharedSecurityConfig {
                                 "/ws-chat/**"
                         ).permitAll()
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/api/v1/seller/**").hasAuthority("ROLE_SELLER")
+                        .requestMatchers("/api/v1/seller/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SELLER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers("/api/v1/chat/**").hasAnyAuthority("ROLE_CUSTOMER", "ROLE_SELLER")
                         .requestMatchers("/api/v1/user/profile/**").authenticated()

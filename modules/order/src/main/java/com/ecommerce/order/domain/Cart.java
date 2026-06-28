@@ -8,7 +8,7 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 
 @Entity
-@Table(name = "cart")
+@Table(name = "carts")
 @Getter
 @Setter
 @Builder

@@ -5,7 +5,6 @@ from typing import List, Dict, Any
 import uvicorn
 import logging
 
-# Thiết lập logging để bạn dễ theo dõi quá trình rerank
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,6 @@ app = FastAPI(title="Ecommerce Semantic Brain")
 print("Loading embedding model...")
 embedding_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 print("Loading reranker...")
-# M3 là model rất mạnh, giữ nguyên nếu server của bạn đủ RAM
 reranker = CrossEncoder("BAAI/bge-reranker-v2-m3")
 print("AI Ready")
 
@@ -24,7 +22,6 @@ class QueryRequest(BaseModel):
 class RerankRequest(BaseModel):
     query: str
     candidates: List[Dict[str, Any]]
-    # Thêm categoryId vào request để lọc cứng ngay tại Python nếu cần
     category_id: int = None
 
 @app.get("/health")
@@ -48,7 +45,6 @@ def rerank(request: RerankRequest):
         pairs = [[request.query, f"{c.get('productName', '')} {c.get('description', '')[:200]}"]
                  for c in request.candidates]
 
-        # batch_size giúp tránh lỗi OOM (Out of Memory) nếu danh sách ứng viên lớn
         scores = reranker.predict(pairs, batch_size=32)
         for i, candidate in enumerate(request.candidates):
             logger.info(f"Sản phẩm: {candidate.get('productName')} | Score: {scores[i]}")
@@ -59,7 +55,6 @@ def rerank(request: RerankRequest):
             item["rerankScore"] = float(scores[i])
             results.append(item)
 
-        # Sắp xếp và trả về top kết quả tốt nhất
         results.sort(key=lambda x: x["rerankScore"], reverse=True)
 
         final_results = [r for r in results if r["rerankScore"] > 0.1]

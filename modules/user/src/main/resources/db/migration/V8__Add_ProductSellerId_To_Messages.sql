@@ -1,0 +1,1 @@
+ALTER TABLE messages ADD COLUMN product_seller_id BIGINT;
